@@ -1,5 +1,9 @@
 # TOML parser and encoder library for Golang [![Build Status](https://travis-ci.org/naoina/toml.png?branch=master)](https://travis-ci.org/naoina/toml)
 
+## Notice
+
+This is an modification version of toml parser to be used in configo, Use the original project if you do not need configo.
+
 [TOML](https://github.com/toml-lang/toml) parser and encoder library for [Golang](http://golang.org/).
 
 This library is compatible with TOML version [v0.4.0](https://github.com/toml-lang/toml/blob/master/versions/en/toml-v0.4.0.md).
