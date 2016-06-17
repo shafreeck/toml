@@ -73,6 +73,9 @@ type Marshaler interface {
 }
 
 func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
+	for rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
 	rt := rv.Type()
 	for i := 0; i < rv.NumField(); i++ {
 		ft := rt.Field(i)
@@ -94,14 +97,35 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 			}
 		}
 		var err error
-		if buf, err = encodeValue(buf, prefix, tag.Name, fv, inArray, arrayTable); err != nil {
+		if buf, err = encodeValue(buf, prefix, tag, fv, inArray, arrayTable); err != nil {
 			return nil, err
 		}
 	}
 	return buf, nil
 }
 
-func encodeValue(buf []byte, prefix, name string, fv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
+func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
+	if tag != nil {
+		//Use newline to group keys
+		if !inArray && len(buf) > 0 {
+			buf = append(buf, '\n')
+		}
+		buf = appendNewline(append(buf, fmt.Sprintf("#type: %v", fv.Type())...), inArray, arrayTable)
+		if tag.Check != "" {
+			buf = appendNewline(append(buf, fmt.Sprintf("#rules: %v", tag.Check)...), inArray, arrayTable)
+		}
+		if tag.Description != "" {
+			buf = appendNewline(append(buf, fmt.Sprintf("#description: %v", tag.Description)...), inArray, arrayTable)
+		}
+		if tag.Value == "required" {
+			buf = appendNewline(append(buf, fmt.Sprintf("#required")...), inArray, arrayTable)
+		} else {
+			buf = appendNewline(append(buf, fmt.Sprintf("#default: %v", tag.Value)...), inArray, arrayTable)
+			//comment out the key when it has a default value
+			buf = append(buf, '#')
+		}
+	}
+	name := tag.Name
 	switch t := fv.Interface().(type) {
 	case Marshaler:
 		b, err := t.MarshalTOML()
@@ -144,7 +168,7 @@ func encodeValue(buf []byte, prefix, name string, fv reflect.Value, inArray, arr
 			if i != 0 {
 				buf = append(buf, ',')
 			}
-			if buf, err = encodeValue(buf, prefix, name, fv.Index(i), true, false); err != nil {
+			if buf, err = encodeValue(buf, prefix, tag, fv.Index(i), true, false); err != nil {
 				return nil, err
 			}
 		}
