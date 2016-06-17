@@ -73,6 +73,7 @@ type Marshaler interface {
 }
 
 func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
+	var nested []byte
 	for rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
@@ -97,30 +98,39 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 			}
 		}
 		var err error
-		if buf, err = encodeValue(buf, prefix, tag, fv, inArray, arrayTable); err != nil {
-			return nil, err
+		if fv.Kind() != reflect.Struct {
+			if buf, err = encodeValue(buf, prefix, tag, fv, inArray, arrayTable); err != nil {
+				return nil, err
+			}
+		} else {
+			if nested, err = encodeValue(append(nested, '\n'), prefix, tag, fv, inArray, arrayTable); err != nil {
+				return nil, err
+			}
 		}
 	}
+	buf = append(buf, nested...)
 	return buf, nil
 }
 
 func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
 	if tag != nil {
 		//Use newline to group keys
-		if !inArray && len(buf) > 0 {
+		if !inArray && len(buf) > 0 && buf[0] != '\n' {
 			buf = append(buf, '\n')
 		}
-		buf = appendNewline(append(buf, fmt.Sprintf("#type: %v", fv.Type())...), inArray, arrayTable)
+		if fv.Kind() != reflect.Struct {
+			buf = appendNewline(append(buf, fmt.Sprintf("#type:        %v", fv.Type())...), inArray, arrayTable)
+		}
 		if tag.Check != "" {
-			buf = appendNewline(append(buf, fmt.Sprintf("#rules: %v", tag.Check)...), inArray, arrayTable)
+			buf = appendNewline(append(buf, fmt.Sprintf("#rules:       %v", tag.Check)...), inArray, arrayTable)
 		}
 		if tag.Description != "" {
 			buf = appendNewline(append(buf, fmt.Sprintf("#description: %v", tag.Description)...), inArray, arrayTable)
 		}
 		if tag.Value == "required" {
 			buf = appendNewline(append(buf, fmt.Sprintf("#required")...), inArray, arrayTable)
-		} else {
-			buf = appendNewline(append(buf, fmt.Sprintf("#default: %v", tag.Value)...), inArray, arrayTable)
+		} else if tag.Value != "" {
+			buf = appendNewline(append(buf, fmt.Sprintf("#default:     %v", tag.Value)...), inArray, arrayTable)
 			//comment out the key when it has a default value
 			buf = append(buf, '#')
 		}
