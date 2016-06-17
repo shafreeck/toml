@@ -79,22 +79,22 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 		if !ast.IsExported(ft.Name) {
 			continue
 		}
-		colName, rest := extractTag(rt.Field(i).Tag.Get(fieldTagName))
-		if colName == tagSkip {
+		tag := extractTag(rt.Field(i).Tag.Get(fieldTagName))
+		if tag.Name == tagSkip {
 			continue
 		}
-		if colName == "" {
-			colName = stringutil.ToSnakeCase(ft.Name)
+		if tag.Name == "" {
+			tag.Name = stringutil.ToSnakeCase(ft.Name)
 		}
 		fv := rv.Field(i)
-		switch rest {
+		switch tag.Value {
 		case tagOmitempty:
 			if fv.Interface() == reflect.Zero(ft.Type).Interface() {
 				continue
 			}
 		}
 		var err error
-		if buf, err = encodeValue(buf, prefix, colName, fv, inArray, arrayTable); err != nil {
+		if buf, err = encodeValue(buf, prefix, tag.Name, fv, inArray, arrayTable); err != nil {
 			return nil, err
 		}
 	}

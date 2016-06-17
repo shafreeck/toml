@@ -7,6 +7,13 @@ import (
 	"unicode"
 )
 
+type CfgTag struct {
+	Name        string
+	Value       string
+	Check       string
+	Description string
+}
+
 // toCamelCase returns a copy of the string s with all Unicode letters mapped to their camel case.
 // It will convert to upper case previous letter of '_' and first letter, and remove letter of '_'.
 func toCamelCase(s string) string {
@@ -32,10 +39,10 @@ func toCamelCase(s string) string {
 }
 
 const (
-	fieldTagName = "toml"
+	fieldTagName = "cfg"
 )
 
-func findField(rv reflect.Value, name string) (field reflect.Value, fieldName string, found bool) {
+func findField(rv reflect.Value, name string) (field reflect.Value, fieldName string, found bool, tag *CfgTag) {
 	switch rv.Kind() {
 	case reflect.Struct:
 		rt := rv.Type()
@@ -44,8 +51,8 @@ func findField(rv reflect.Value, name string) (field reflect.Value, fieldName st
 			if !ast.IsExported(ft.Name) {
 				continue
 			}
-			if col, _ := extractTag(ft.Tag.Get(fieldTagName)); col == name {
-				return rv.Field(i), ft.Name, true
+			if tag := extractTag(ft.Tag.Get(fieldTagName)); tag != nil && tag.Name == name {
+				return rv.Field(i), ft.Name, true, tag
 			}
 		}
 		for _, name := range []string{
@@ -54,21 +61,41 @@ func findField(rv reflect.Value, name string) (field reflect.Value, fieldName st
 			strings.ToUpper(name),
 		} {
 			if field := rv.FieldByName(name); field.IsValid() {
-				return field, name, true
+				if ft, ok := rt.FieldByName(name); ok {
+					tag := extractTag(ft.Tag.Get(fieldTagName))
+					return field, name, true, tag
+				}
+				return field, name, true, nil
 			}
 		}
 	case reflect.Map:
-		return reflect.New(rv.Type().Elem()).Elem(), name, true
+		return reflect.New(rv.Type().Elem()).Elem(), name, true, nil
 	}
-	return field, "", false
+	return field, "", false, nil
 }
 
-func extractTag(tag string) (col, rest string) {
-	tags := strings.SplitN(tag, ",", 2)
-	if len(tags) == 2 {
-		return strings.TrimSpace(tags[0]), strings.TrimSpace(tags[1])
+func extractTag(tag string) *CfgTag {
+	tags := strings.SplitN(tag, ",", 4)
+	cfg := &CfgTag{}
+	switch c := len(tags); c {
+	case 1:
+		cfg.Name = strings.TrimSpace(tags[0])
+	case 2:
+		cfg.Name = strings.TrimSpace(tags[0])
+		cfg.Value = strings.TrimSpace(tags[1])
+	case 3:
+		cfg.Name = strings.TrimSpace(tags[0])
+		cfg.Value = strings.TrimSpace(tags[1])
+		cfg.Check = strings.TrimSpace(tags[2])
+	case 4:
+		cfg.Name = strings.TrimSpace(tags[0])
+		cfg.Value = strings.TrimSpace(tags[1])
+		cfg.Check = strings.TrimSpace(tags[2])
+		cfg.Description = strings.TrimSpace(tags[3])
+	default:
+		return nil
 	}
-	return strings.TrimSpace(tags[0]), ""
+	return cfg
 }
 
 func tableName(prefix, name string) string {

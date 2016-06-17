@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/naoina/toml/ast"
+	"github.com/shafreeck/toml/ast"
 )
 
 const (
@@ -27,6 +27,11 @@ var (
 		"_", "",
 	)
 )
+
+//SetValueFunc is a callback can be used to validate value
+type SetValueFunc func(field string, rv reflect.Value, av ast.Value, tag *CfgTag) error
+
+var SetValue SetValueFunc
 
 // Unmarshal parses the TOML data and stores the result in the value pointed to by v.
 //
@@ -112,7 +117,7 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 	for key, val := range t.Fields {
 		switch av := val.(type) {
 		case *ast.KeyValue:
-			fv, fieldName, found := findField(rv, key)
+			fv, fieldName, found, tag := findField(rv, key)
 			if !found {
 				return fmt.Errorf("line %d: field corresponding to `%s' is not defined in `%T'", av.Line, key, v)
 			}
@@ -124,7 +129,7 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 				}
 				fv.SetMapIndex(reflect.ValueOf(fieldName), mv)
 			default:
-				if err := setValue(fv, av.Value); err != nil {
+				if err := setValue(fieldName, fv, av.Value, tag); err != nil {
 					return fmt.Errorf("line %d: %v.%s: %v", av.Line, rv.Type(), fieldName, err)
 				}
 				if rv.Kind() == reflect.Map {
@@ -132,7 +137,7 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 				}
 			}
 		case *ast.Table:
-			fv, fieldName, found := findField(rv, key)
+			fv, fieldName, found, _ := findField(rv, key)
 			if !found {
 				return fmt.Errorf("line %d: field corresponding to `%s' is not defined in `%T'", av.Line, key, v)
 			}
@@ -166,7 +171,7 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 				return fmt.Errorf("line %d: `%v.%s' must be struct or map, but %v given", av.Line, rv.Type(), fieldName, fv.Kind())
 			}
 		case []*ast.Table:
-			fv, fieldName, found := findField(rv, key)
+			fv, fieldName, found, _ := findField(rv, key)
 			if !found {
 				return fmt.Errorf("line %d: field corresponding to `%s' is not defined in `%T'", av[0].Line, key, v)
 			}
@@ -233,12 +238,15 @@ func setUnmarshaler(lhs reflect.Value, data string) (error, bool) {
 	return nil, false
 }
 
-func setValue(lhs reflect.Value, val ast.Value) error {
+func setValue(field string, lhs reflect.Value, val ast.Value, tag *CfgTag) error {
 	for lhs.Kind() == reflect.Ptr {
 		lhs.Set(reflect.New(lhs.Type().Elem()))
 		lhs = lhs.Elem()
 	}
 	if err, ok := setUnmarshaler(lhs, val.Source()); ok {
+		return err
+	}
+	if err := SetValue(field, lhs, val, tag); err != nil {
 		return err
 	}
 	switch v := val.(type) {
@@ -263,7 +271,7 @@ func setValue(lhs reflect.Value, val ast.Value) error {
 			return err
 		}
 	case *ast.Array:
-		if err := setArray(lhs, v); err != nil {
+		if err := setArray(field, lhs, v, tag); err != nil {
 			return err
 		}
 	}
@@ -330,7 +338,7 @@ func setDatetime(fv reflect.Value, v *ast.Datetime) error {
 	return set(fv, tm)
 }
 
-func setArray(fv reflect.Value, v *ast.Array) error {
+func setArray(field string, fv reflect.Value, v *ast.Array, tag *CfgTag) error {
 	if len(v.Value) == 0 {
 		return nil
 	}
@@ -348,7 +356,7 @@ func setArray(fv reflect.Value, v *ast.Array) error {
 	t := sliceType.Elem()
 	for _, vv := range v.Value {
 		tmp := reflect.New(t).Elem()
-		if err := setValue(tmp, vv); err != nil {
+		if err := setValue(field, tmp, vv, tag); err != nil {
 			return err
 		}
 		slice = reflect.Append(slice, tmp)
