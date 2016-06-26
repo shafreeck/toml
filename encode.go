@@ -198,7 +198,7 @@ func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArr
 
 func appendKey(buf []byte, key string, inArray, arrayTable bool) []byte {
 	if !inArray {
-		return append(append(buf, key...), '=')
+		return append(append(buf, key...), " = "...)
 	}
 	return buf
 }
