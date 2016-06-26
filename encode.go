@@ -113,9 +113,9 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 }
 
 func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArray, arrayTable bool) ([]byte, error) {
-	if tag != nil {
+	if tag != nil && !inArray {
 		//Use newline to group keys
-		if !inArray && len(buf) > 0 && buf[0] != '\n' {
+		if len(buf) > 0 && buf[0] != '\n' {
 			buf = append(buf, '\n')
 		}
 		if fv.Kind() != reflect.Struct {
