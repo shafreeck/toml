@@ -75,7 +75,7 @@ func findField(rv reflect.Value, name string) (field reflect.Value, fieldName st
 }
 
 func extractTag(tag string) *CfgTag {
-	tags := strings.SplitN(tag, ",", 4)
+	tags := strings.SplitN(tag, ";", 4)
 	cfg := &CfgTag{}
 	switch c := len(tags); c {
 	case 1:
