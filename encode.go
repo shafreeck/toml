@@ -97,6 +97,10 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 				continue
 			}
 		}
+		//ignore zero value of ptr
+		if !fv.IsValid() {
+			continue
+		}
 		var err error
 		if fv.Kind() != reflect.Struct {
 			if buf, err = encodeValue(buf, prefix, tag, fv, inArray, arrayTable); err != nil {
