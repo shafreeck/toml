@@ -97,7 +97,11 @@ func marshal(buf []byte, prefix string, rv reflect.Value, inArray, arrayTable bo
 				continue
 			}
 		}
+
 		//ignore zero value of ptr
+		for fv.Kind() == reflect.Ptr {
+			fv = fv.Elem()
+		}
 		if !fv.IsValid() {
 			continue
 		}
