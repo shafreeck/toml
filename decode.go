@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/shafreeck/toml/ast"
 )
@@ -319,6 +320,14 @@ func setFloat(fv reflect.Value, v *ast.Float) error {
 }
 
 func setString(fv reflect.Value, v *ast.String) error {
+	if fv.Kind() == reflect.Int64 {
+		// this is a duration
+		d, err := time.ParseDuration(v.Value)
+		if err != nil {
+			return err
+		}
+		return set(fv, d)
+	}
 	return set(fv, v.Value)
 }
 
