@@ -156,6 +156,9 @@ func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArr
 	}
 	switch fv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if fv.Type().Name() == "Duration" {
+			return appendNewline(encodeDuration(appendKey(buf, name, inArray, arrayTable), fv.Int()), inArray, arrayTable), nil
+		}
 		return appendNewline(encodeInt(appendKey(buf, name, inArray, arrayTable), fv.Int()), inArray, arrayTable), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return appendNewline(encodeUint(appendKey(buf, name, inArray, arrayTable), fv.Uint()), inArray, arrayTable), nil
@@ -254,6 +257,11 @@ func encodeInterface(buf []byte, v interface{}) ([]byte, error) {
 
 func encodeInt(buf []byte, i int64) []byte {
 	return strconv.AppendInt(buf, i, 10)
+}
+
+func encodeDuration(buf []byte, i int64) []byte {
+	d := time.Duration(i)
+	return append(buf, d.String()...)
 }
 
 func encodeUint(buf []byte, u uint64) []byte {
