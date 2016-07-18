@@ -261,7 +261,7 @@ func encodeInt(buf []byte, i int64) []byte {
 
 func encodeDuration(buf []byte, i int64) []byte {
 	d := time.Duration(i)
-	return append(buf, d.String()...)
+	return strconv.AppendQuote(buf, d.String())
 }
 
 func encodeUint(buf []byte, u uint64) []byte {
