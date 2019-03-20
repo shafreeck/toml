@@ -137,6 +137,7 @@ func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArr
 		}
 		if tag.Value == "required" {
 			buf = append(buf, fmt.Sprintf(", required")...)
+			buf = append(buf, '\n')
 		} else if tag.Value != "" {
 			buf = append(buf, fmt.Sprintf(", default: %v", tag.Value)...)
 			//comment out the key when it has a default value
