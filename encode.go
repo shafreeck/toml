@@ -127,18 +127,18 @@ func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArr
 			buf = append(buf, '\n')
 		}
 		if fv.Kind() != reflect.Struct {
-			buf = appendNewline(append(buf, fmt.Sprintf("#type:        %v", fv.Type())...), inArray, arrayTable)
+			buf = append(buf, fmt.Sprintf("#type: %v", fv.Type())...)
 		}
 		if tag.Check != "" {
-			buf = appendNewline(append(buf, fmt.Sprintf("#rules:       %v", tag.Check)...), inArray, arrayTable)
+			buf = append(buf, fmt.Sprintf(", rules: %v", tag.Check)...)
 		}
 		if tag.Description != "" {
-			buf = appendNewline(append(buf, fmt.Sprintf("#description: %v", tag.Description)...), inArray, arrayTable)
+			buf = append(buf, fmt.Sprintf(",description: %v", tag.Description)...)
 		}
 		if tag.Value == "required" {
-			buf = appendNewline(append(buf, fmt.Sprintf("#required")...), inArray, arrayTable)
+			buf = append(buf, fmt.Sprintf(",required")...)
 		} else if tag.Value != "" {
-			buf = appendNewline(append(buf, fmt.Sprintf("#default:     %v", tag.Value)...), inArray, arrayTable)
+			buf = append(buf, fmt.Sprintf("#default: %v", tag.Value)...)
 			//comment out the key when it has a default value
 			buf = append(buf, '#')
 		}
