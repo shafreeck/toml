@@ -133,12 +133,12 @@ func encodeValue(buf []byte, prefix string, tag *CfgTag, fv reflect.Value, inArr
 			buf = append(buf, fmt.Sprintf(", rules: %v", tag.Check)...)
 		}
 		if tag.Description != "" {
-			buf = append(buf, fmt.Sprintf(",description: %v", tag.Description)...)
+			buf = append(buf, fmt.Sprintf(", description: %v", tag.Description)...)
 		}
 		if tag.Value == "required" {
-			buf = append(buf, fmt.Sprintf(",required")...)
+			buf = append(buf, fmt.Sprintf(", required")...)
 		} else if tag.Value != "" {
-			buf = append(buf, fmt.Sprintf("#default: %v", tag.Value)...)
+			buf = append(buf, fmt.Sprintf(", default: %v", tag.Value)...)
 			//comment out the key when it has a default value
 			buf = append(buf, '#')
 		}
