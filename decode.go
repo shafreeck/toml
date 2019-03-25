@@ -252,8 +252,10 @@ func setValue(field string, lhs reflect.Value, val ast.Value, tag *CfgTag) error
 	if err, ok := setUnmarshaler(lhs, val.Source()); ok {
 		return err
 	}
-	if err := SetValue(field, lhs, val, tag); err != nil {
-		return err
+	if SetValue != nil {
+		if err := SetValue(field, lhs, val, tag); err != nil {
+			return err
+		}
 	}
 	switch v := val.(type) {
 	case *ast.Integer:
