@@ -191,10 +191,10 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 			for ; t.Kind() == reflect.Ptr; pc++ {
 				t = t.Elem()
 			}
-			if fv.Kind() != reflect.Slice {
-				return fmt.Errorf("line %d: `%v.%s' must be slice type, but %v given", av[0].Line, rv.Type(), fieldName, fv.Kind())
+			if fv.Kind() != reflect.Slice && fv.Kind() != reflect.Array {
+				return fmt.Errorf("line %d: `%v.%s' must be slice/array type, but %v given", av[0].Line, rv.Type(), fieldName, fv.Kind())
 			}
-			for _, tbl := range av {
+			for i, tbl := range av {
 				var vv reflect.Value
 				switch t.Kind() {
 				case reflect.Map:
@@ -214,7 +214,12 @@ func UnmarshalTable(t *ast.Table, v interface{}) (err error) {
 					pv.Set(vv)
 					vv = pv
 				}
-				fv.Set(reflect.Append(fv, vv))
+				if fv.Kind() == reflect.Slice {
+					fv.Set(reflect.Append(fv, vv))
+				}
+				if fv.Kind() == reflect.Array {
+					fv.Index(i).Set(vv)
+				}
 			}
 			if rv.Kind() == reflect.Map {
 				rv.SetMapIndex(reflect.ValueOf(fieldName), fv)
