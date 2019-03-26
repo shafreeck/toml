@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/naoina/toml"
+	"github.com/shafreeck/toml"
 )
 
 type tomlConfig struct {
